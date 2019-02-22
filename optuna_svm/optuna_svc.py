@@ -24,10 +24,10 @@ def objective(y_train, y_test, X_train_std, X_test_std, trial):
     #目的関数
     params = {
         'kernel': trial.suggest_categorical('kernel', ['linear','rbf','sigmoid']),
-        'C': trial.suggest_loguniform('C', 1e+1, 10.0),
+        #'C': trial.suggest_loguniform('C', 10.0),
         'gamma': trial.suggest_loguniform('gamma', 1e-3, 3.0),
     }
-    mdl = SVC(**params)
+    mdl = SVC(**params,C=10.0)
     mdl.fit(X_train_std, y_train)
     pred_test = mdl.predict(X_test_std)
     accuracy_test = accuracy_score(y_test, pred_test)
@@ -45,17 +45,25 @@ def main():
     sc.fit(X_train)
     X_train_std = sc.transform(X_train)
     X_test_std = sc.transform(X_test)
+
+    #可視化
+    for key in X:
+        plt.scatter(X[key],y,marker='.')
+        plt.legend()
+        plt.xlabel(key)
+        plt.show()
+
     
     #optunaの前処理
     obj_f = partial(objective, y_train, y_test, X_train_std, X_test_std)
     #セッション作成
     study = optuna.create_study()
     #回数
-    study.optimize(obj_f, n_trials=100)
+    study.optimize(obj_f, n_trials=50)
 
     params = {}
     params['kernel'] = study.best_params['kernel']
-    params['C'] = study.best_params['C']
+    params['C'] = 10#study.best_params['C']
     params['gamma'] = study.best_params['gamma']
     
     mdl = SVC(**params)
@@ -72,4 +80,3 @@ def main():
 if __name__ == '__main__':
     target_column = 'quality'
     main()
-
