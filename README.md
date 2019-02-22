@@ -1,2 +1,2 @@
 # student
-for study anything to engineering
+to study anything to engineer
