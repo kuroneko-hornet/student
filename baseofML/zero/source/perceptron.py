@@ -31,7 +31,7 @@ def func():
     model = Model(inputs=_input, outputs=_output)
     model.set_weights( [np.array([[0.5], [0.5]]), np.array([-0.7])] )
 
-    print( get_test_res(model) )
+    print( predict(model) )
 
 if __name__ == '__main__':
     seq()
