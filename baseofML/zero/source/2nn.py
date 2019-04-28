@@ -7,9 +7,7 @@ import matplotlib.pyplot as plt
 
 
 def load_preprocess_data(params):
-
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
-    
     # preprocess
     x_train = x_train.reshape(60000, 784)
     x_test = x_test.reshape(10000, 784)
@@ -47,14 +45,12 @@ def train(model, params, x_train, y_train, x_test, y_test):
         optimizer = SGD(lr=params['learning_rate']),
         loss = 'categorical_crossentropy',
         metrics = ['accuracy'])
-    
     result = model.fit(\
         x = x_train, y = y_train,
         batch_size = params['batch_size'],
         epochs = params['epochs'],
         verbose = 1,
         validation_data = (x_test, y_test))
-    
     return result
 
 
@@ -73,17 +69,12 @@ def show_result(history, epochs):
 
 
 def main():
-
-
     params = set_params()
     model = set_model(params)
     # model.summary()
-    
     x_train, y_train, x_test, y_test = \
         load_preprocess_data(params)
-
     _result = train(model, params, x_train, y_train, x_test, y_test)
-
     show_result(_result.history, params['epochs'])
 
 
