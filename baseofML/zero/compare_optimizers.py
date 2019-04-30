@@ -1,6 +1,6 @@
 from keras import Model
 from keras.layers import Input, Dense, BatchNormalization, Dropout
-from keras.datasets import mnist
+from keras.datasets import mnist, fashion_mnist
 from keras.utils import to_categorical
 from keras.optimizers import SGD, Adagrad, Adam
 import matplotlib.pyplot as plt
@@ -12,7 +12,11 @@ def load_preprocess_data(params):
         args: params
         output: x_train, y_train, x_test, y_test
     '''
-    (x_train, y_train), (x_test, y_test) = mnist.load_data()
+    use_fashipon = True
+    if use_fashipon: 
+        (x_train, y_train), (x_test, y_test) = fashion_mnist.load_data()
+    else:
+        (x_train, y_train), (x_test, y_test) = mnist.load_data()
     # preprocess
     x_train = x_train.reshape(60000, 784)
     x_test = x_test.reshape(10000, 784)
@@ -29,16 +33,26 @@ def set_params():
     ''' no args'''
     params = {
         'activation' : 'relu',
-        'batch_size' : 100,
-        'epochs' : 20,
+        'batch_size' : 1000,
+        'epochs' : 3,
         'hidden_dim' : 100,
         'img_shape' : (28 * 28, ),
-        'kernel_initializer' : 'he_normal'
-        'layer_num' : 5,
+        'kernel_initializer' : 'he_normal',
+        'layer_num' : 6,
         'learning_rate' : 0.01,
         'output_dim' : 10,
     }
     return params
+
+
+def set_optimizer():
+    optimizers = {
+        'sgd':SGD(),
+        'momentum':SGD(momentum=0.9),
+        'adagrad':Adagrad(),
+        'adam':Adam()
+        }
+    return optimizers
 
 
 def set_model(params):
@@ -49,7 +63,7 @@ def set_model(params):
         _hidden = Dense(\
             units = params['hidden_dim'],
             activation = params['activation'],
-            kernel_initializer = params['he_normal'])(_hidden)
+            kernel_initializer = params['kernel_initializer'])(_hidden)
         _hidden = BatchNormalization()(_hidden)
         _hidden = Dropout(0.2)(_hidden)
     _output = Dense(params['output_dim'], activation='softmax')(_hidden)
@@ -72,39 +86,47 @@ def train(model, params, opt, x_train, y_train, x_test, y_test):
     return result
 
 
-def show_result(history, epochs, opt_name):
-    ''' Args: history, epochs, opt_name'''
-    loss = history['loss']
-    val_loss = history['val_loss']
+def build_result_file(figure_name, result_histories, epochs):
+    ''' Args: history, epochs'''
+    h_size = len(result_histories)
+    f1 = plt.figure(figsize=(5,h_size*2.5))
 
-    plt.figure()
-    plt.plot(range(1, epochs+1), loss, marker='.', label='train')
-    plt.plot(range(1, epochs+1), val_loss, marker='.', label='test')
-    plt.legend(loc='best', fontsize=10)
-    plt.grid()
-    plt.xlabel('epochs')
-    plt.ylabel('loss')
-    plt.savefig(f'loss/dropout_{opt_name}_he_normal.jpg')
+    plt_num = 1
+    for k, v in result_histories.items():
+        d_test = v[f'{figure_name}']
+        d_train = v[f'val_{figure_name}']
+        plt.subplot(h_size, 1,plt_num)
+        plt.plot(range(1, epochs+1), d_train, marker='.', label=f'train')
+        plt.plot(range(1, epochs+1), d_test, marker='.', label=f'test')
+
+        plt.title(k)
+        plt.legend(loc='best', fontsize=10)
+        plt.grid()
+        plt.xlabel('epochs')
+        plt.ylabel('loss')
+        plt.tight_layout()
+
+        plt_num += 1
+
+    plt.savefig(f'{figure_name}/test.jpg')
 
 
 def main():
 
-    optimizers = {
-        'sgd':SGD(),
-        'momentum':SGD(momentum=0.9),
-        'adagrad':Adagrad(),
-        'adam':Adam()
-        }
-    
+    optimizers = set_optimizer()
+    params = set_params()
+    x_train, y_train, x_test, y_test = \
+        load_preprocess_data(params)
+
+    result_histories = {}
     for opt_name, opt in optimizers.items():
-        params = set_params()
         model = set_model(params)
         # model.summary()
-        x_train, y_train, x_test, y_test = \
-            load_preprocess_data(params)
-
         _result = train(model, params, opt, x_train, y_train, x_test, y_test)
-        show_result(_result.history, params['epochs'], opt_name)
+        result_histories[opt_name] = _result.history
+
+    build_result_file('loss', result_histories, params['epochs'])
+    build_result_file('acc', result_histories, params['epochs'])
 
 
 if __name__ == '__main__':
